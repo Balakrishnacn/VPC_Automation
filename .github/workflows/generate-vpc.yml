@@ -1,0 +1,39 @@
+name: Generate VPC Terraform PR
+
+on:
+  workflow_dispatch:
+    inputs:
+      cidr:
+        description: "IPv4 network CIDR (for example 10.42.0.0/16)"
+        required: true
+        type: string
+      request:
+        description: "Optional natural-language VPC request"
+        required: false
+        type: string
+
+permissions:
+  contents: write
+  id-token: write
+  pull-requests: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - run: pip install --requirement requirements.txt
+      - name: Generate and open pull request
+        env:
+          AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+          BEDROCK_MODEL_ID: ${{ vars.BEDROCK_MODEL_ID || 'anthropic.claude-3-haiku-20240307-v1:0' }}
+          GH_TOKEN: ${{ github.token }}
+          GITHUB_BASE_REF: ${{ github.ref_name }}
+        run: python scripts/generate_vpc_pr.py --cidr "${{ inputs.cidr }}" --request "${{ inputs.request }}"
