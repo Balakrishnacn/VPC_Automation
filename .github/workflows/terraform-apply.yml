@@ -1,0 +1,27 @@
+name: Apply approved VPC Terraform
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  apply:
+    # Configure this environment with required reviewers. This is an
+    # independent approval gate after the generated PR has been reviewed and
+    # merged to main.
+    environment: terraform-apply
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_APPLY_ROLE_TO_ASSUME }}
+          aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
+      - run: terraform -chdir=generated/vpc init -input=false
+      - run: terraform -chdir=generated/vpc plan -input=false
+      - run: terraform -chdir=generated/vpc apply -input=false -auto-approve
