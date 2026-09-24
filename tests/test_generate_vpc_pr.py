@@ -36,6 +36,16 @@ class GeneratorTests(unittest.TestCase):
             finally:
                 MODULE.OUTPUT_DIR = original
 
+    def test_workflows_use_secret_credentials_without_oidc(self):
+        workflows = Path(__file__).parents[1] / ".github" / "workflows"
+        for name in ("generate-vpc.yml", "terraform-apply.yml"):
+            content = (workflows / name).read_text(encoding="utf-8")
+            self.assertIn("secrets.AWS_ACCESS_KEY_ID", content)
+            self.assertIn("secrets.AWS_SECRET_ACCESS_KEY", content)
+            self.assertIn("secrets.AWS_SESSION_TOKEN", content)
+            self.assertNotIn("id-token: write", content)
+            self.assertNotIn("role-to-assume:", content)
+
 
 if __name__ == "__main__":
     unittest.main()
