@@ -25,10 +25,22 @@ The CIDR is always validated locally and is passed explicitly to the reusable
 module. The Bedrock model may choose only supported module settings; it cannot
 write arbitrary workflow files or Terraform resources.
 
-The workflow uses GitHub's OIDC token to assume the AWS role configured in
-`AWS_ROLE_TO_ASSUME`. No long-lived AWS keys are stored in the repository.
-The role needs permission to invoke the selected Bedrock model. The workflow
-also needs the repository's `GITHUB_TOKEN` to create a branch and pull request.
+The workflow authenticates with credentials supplied through GitHub Actions
+secrets. Configure these repository or environment secrets:
+
+- `AWS_ACCESS_KEY_ID` - required IAM access key ID.
+- `AWS_SECRET_ACCESS_KEY` - required IAM secret access key.
+- `AWS_SESSION_TOKEN` - optional session token for temporary credentials.
+
+Set the optional `AWS_REGION` and `BEDROCK_MODEL_ID` as repository variables.
+The credentials are passed only to the workflow's AWS configuration action and
+are not written to files, Terraform configuration, generated branches, or pull
+requests. For local use, export the same AWS environment variables before
+running the generator; boto3 and the Terraform AWS provider read them without
+requiring credentials in source code. Use a narrowly scoped IAM principal
+with permission to invoke the selected Bedrock model, rotate keys regularly,
+and never print or commit credential values. The workflow also needs the
+repository's `GITHUB_TOKEN` to create a branch and pull request.
 
 ## Approval and deployment safety
 
@@ -38,7 +50,9 @@ Terraform validation check. The generation workflow intentionally has no
 workflow can only be manually dispatched from `main`, uses the separate
 `terraform-apply` environment, and pauses for its required reviewers before
 running. Configure that environment with the people who may approve
-deployment, and set `AWS_APPLY_ROLE_TO_ASSUME` to a narrowly scoped role.
+deployment, and provide the same AWS credential secrets to that environment
+or repository. The apply workflow uses them only after the environment's
+required reviewers approve the manually dispatched run.
 
 For local checks:
 

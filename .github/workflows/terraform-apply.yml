@@ -5,7 +5,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   apply:
@@ -20,7 +19,9 @@ jobs:
       - uses: hashicorp/setup-terraform@v3
       - uses: aws-actions/configure-aws-credentials@v4
         with:
-          role-to-assume: ${{ vars.AWS_APPLY_ROLE_TO_ASSUME }}
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
           aws-region: ${{ vars.AWS_REGION || 'us-east-1' }}
       - run: terraform -chdir=generated/vpc init -input=false
       - run: terraform -chdir=generated/vpc plan -input=false
